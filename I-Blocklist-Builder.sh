@@ -1,7 +1,10 @@
 #!/bin/bash
 
 
-# URI Constants
+# Constants
+CURL_RETRY_OPTIONS='--connect-timeout 30 --retry 5 --retry-connrefused --retry-delay 10 --retry-max-time 300'
+CURL_OTHER_OPTIONS='--insecure --location-trusted --output - --silent'
+CURL_TOTAL_OPTIONS="$CURL_RETRY_OPTIONS $CURL_OTHER_OPTIONS="
 IBLOCKLIST_URI_HTTP='https://'
 IBLOCKLIST_URI_SITE='iblocklist.com/'
 IBLOCKLIST_URI_TYPE='&fileformat=p2p&archiveformat=gz'
@@ -14,7 +17,7 @@ IBLOCKLIST_STRUCT='I-Blocklist-Builder-Buffer.XXXX'
 # Command line argument derived variables
 PROVIDED_USERNAME='' # Default to no authentication
 PROVIDED_PASSWORD='' # Default to no authentication
-PROVIDED_VERBIAGE=3  # Default to verbosity, set to '5' for DEBUG output
+PROVIDED_VERBIAGE=5  # Default to verbosity, set to '5' for DEBUG output
 PROVIDED_OUTPATHS='' # Default to STDOUT
 
 
@@ -93,15 +96,17 @@ subscription() {
 
 # Gather all possible blocklists
 blocklists() {
-    report 'tech' "Entering function call: 'blocklists_json'"
+    report 'tech' "Entering function call: 'blocklists'"
     
     local result=$1
 
     # Request the JSON file of all blocklists
-    json=$(curl -Ls $IBLOCKLIST_URI_JSON)
+    json=$(eval "curl $CURL_TOTAL_OPTIONS '$IBLOCKLIST_URI_JSON'")
+    
     status=$?
     report 'tech' "JSON cURL request exit code: $status"        
     report 'tech' "JSON result from $IBLOCKLIST_URI_JSON"
+    report 'tech' "JSON:\n$json"
 
     # Check if the response is valid JSON
     if  [ ![ jq -reM '""' >/dev/null 2>&1 <<<"$json" ]]; then
@@ -152,12 +157,33 @@ download() {
         fi
     fi
         
-    local request="$IBLOCKLIST_URI_LIST$source$IBLOCKLIST_URI_TYPE$suffix"
+    local webpage="$IBLOCKLIST_URI_LIST$source$IBLOCKLIST_URI_TYPE$suffix"
+    local request="curl $CURL_TOTAL_OPTIONS '$webpage'"
     
     report 'tech' "$request"
     report 'loud' "\t$bullet $prefix: $handle"
-    local content=$(curl -Ls "$request" | gunzip | egrep -v '^#' | sed '/^$/d')
-    echo "$content" >>$IBLOCKLIST_BUFFER
+    content=$(eval "$request" | gunzip)
+    status=$?
+    report 'tech' "cURL | gunzip == $status"
+    if [ $status -ne 0 ]; then
+        report 'tech' "CONTENT: $content"
+        payload=$(eval $request)
+        report 'tech' "PAYLOAD: $payload"
+        report 'warn' "Skipping $handle"
+        return 1;
+    fi
+
+    if [ -z "$content" ]; then
+        report 'tech' "CONTENT: $content"
+        payload=$(eval $request)
+        report 'tech' "PAYLOAD: $payload"
+        report 'warn' "Skipping $handle"
+        return 1;
+    fi
+    
+    local grepped=$(egrep -v '^#' <<<"$content")
+    local clipped=$(sed '/^$/d'   <<<"$grepped")
+    echo "$clipped" >>$IBLOCKLIST_BUFFER
 }
 
 
@@ -205,6 +231,7 @@ blocklists IBLOCKLIST_VALUES
 BLOCKLIST_OVERALL=$(   wc -l <<<"$IBLOCKLIST_VALUES")
 BLOCKLIST_MAXIMUM=$(($(wc -c <<<"$BLOCKLIST_OVERALL") - 1))
 BLOCKLIST_CURRENT=0
+BLOCKLIST_SUCCESS=0
 
 
 # 5th:
@@ -224,8 +251,13 @@ do
      ((BLOCKLIST_CURRENT+=1))
      COUNTER_PREFIX=$(printf "%${BLOCKLIST_MAXIMUM}d/%d" $BLOCKLIST_CURRENT $BLOCKLIST_OVERALL)
      download "$COUNTER_PREFIX" "$HANDLE" "$SOURCE" "$LOCKED"
+     status=$?
+     if [ $status -eq 0 ]; then
+         ((BLOCKLIST_SUCCESS+=1))         
+     fi
+          
 done <<< "$IBLOCKLIST_VALUES"
-report 'info' "Successfully combined $BLOCKLIST_OVERALL blocklists!"
+report 'info' "Successfully combined $BLOCKLIST_SUCCESS/$BLOCKLIST_OVERALL blocklists!"
 
 
 # 7th:
