@@ -17,12 +17,12 @@ The script also supports different levels of output verbosity specified, in incr
 
 | Option |    Name    | Description |
 |:------:|:-----------|:------------|
-|  `-u`  | `Username` | Required for including subscription lists |
-|  `-p`  | `API PIN`  | Required for including subscription lists |
-|  `-q`  | `Quiet`    | Display nothing, no runtime information |
-|  `-e`  | `Error`    | Display only unrecoverable runtime errors |
-|  `-w`  | `Warns`    | Display runtime warnings allong with errors |
-|  `-x`  | `Extra`    | Display extra, diagnostic runtime information |
+|  `-u`  | `Username` | Required for subscription lists |
+|  `-p`  | `API PIN`  | Required for subscription lists |
+|  `-q`  | `Quiet`    | Display no runtime information |
+|  `-e`  | `Error`    | Display only unrecoverable errors |
+|  `-w`  | `Warns`    | Display warnings along with errors |
+|  `-x`  | `Extra`    | Display extra runtime information |
 
 
 ### Examples
