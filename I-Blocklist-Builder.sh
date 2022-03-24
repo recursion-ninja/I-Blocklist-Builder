@@ -4,7 +4,7 @@
 # Constants
 CURL_RETRY_OPTIONS='--connect-timeout 30 --retry 5 --retry-connrefused --retry-delay 10 --retry-max-time 300'
 CURL_OTHER_OPTIONS='--insecure --location-trusted --output - --silent'
-CURL_TOTAL_OPTIONS="$CURL_RETRY_OPTIONS $CURL_OTHER_OPTIONS="
+CURL_TOTAL_OPTIONS="$CURL_RETRY_OPTIONS $CURL_OTHER_OPTIONS"
 IBLOCKLIST_URI_HTTP='https://'
 IBLOCKLIST_URI_SITE='iblocklist.com/'
 IBLOCKLIST_URI_TYPE='&fileformat=p2p&archiveformat=gz'
@@ -17,13 +17,13 @@ IBLOCKLIST_STRUCT='I-Blocklist-Builder-Buffer.XXXX'
 # Command line argument derived variables
 PROVIDED_USERNAME='' # Default to no authentication
 PROVIDED_PASSWORD='' # Default to no authentication
-PROVIDED_VERBIAGE=5  # Default to verbosity, set to '5' for DEBUG output
+PROVIDED_VERBIAGE=3  # Default to verbosity, set to '5' for DEBUG output
 PROVIDED_OUTPATHS='' # Default to STDOUT
 
 
 # General purpose function for standardized output
 report() {
-  if [ $PROVIDED_VERBIAGE -le 0 ]; then return 0; fi
+  if [ "$PROVIDED_VERBIAGE" -le 0 ]; then return 0; fi
   local prefix=''
   case "$1" in
       tech) if [[ $PROVIDED_VERBIAGE -ge 5 ]]; then prefix='# '   ; else return 0; fi ;;
@@ -118,7 +118,12 @@ blocklists() {
     
     # Remove ISP based block lists
     local filterISPs='This list is not recommended for those that are subscribers of the ISP'
-    local blocklists_pruned=$(jq --raw-output '.[] | map(select((.description | index("${filterISPs}") | not))) | .[] | [.name, .list, .subscription] | @tsv' <<<"$json")
+    local filterCountries=' IP ranges.'
+    local selection1="(.description | index(\"${filterISPs}\")      | not)"
+    local selection2="(.description | index(\"${filterCountries}\") | not)"
+    local blocklists_pruned=$(jq --raw-output \
+        ".[] | map(select($selection1 and $selection2)) | .[] | [.name, .list, .subscription] | @tsv" \
+        <<<"$json")
     
     # If there is no subscription authentication information available,
     # then remove the subscription blocklists
