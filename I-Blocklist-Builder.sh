@@ -36,6 +36,12 @@ report() {
 }
 
 
+maximize_verbiage() {
+    local PROPOSED_VERBIAGE="$1"
+    PROVIDED_VERBIAGE=$(( PROPOSED_VERBIAGE > PROVIDED_VERBIAGE ? PROPOSED_VERBIAGE : PROVIDED_VERBIAGE ))
+}
+
+
 # Process the command line arguments
 arguments() {
     local OPTIND
@@ -43,10 +49,10 @@ arguments() {
         case $opt in
             u) PROVIDED_USERNAME="$OPTARG" ;; # I-Blocklist Username
             p) PROVIDED_PASSWORD="$OPTARG" ;; # I-Blocklist PIN
-            x) PROVIDED_VERBIAGE=4;;
-            w) PROVIDED_VERBIAGE=2;;
-            e) PROVIDED_VERBIAGE=1;;
-            q) PROVIDED_VERBIAGE=0;;
+            x) maximize_verbiage 4 ;;
+            w) maximize_verbiage 2 ;;
+            e) maximize_verbiage 1 ;;
+            q) maximize_verbiage 0 ;;
             \?) report 'fail' "Invalid option -$OPTARG" >&2 && exit 1 ;;
         esac
     done
@@ -74,15 +80,15 @@ subscription() {
     report 'tech' "Entering function call: 'subscription'"
 
     # Check for environment defined values if not supplied on command line
-    if [[ -z "${PROVIDED_USERNAME}" && -v "${IBLOCKLIST_USERNAME}" ]]; then
+    if [[ -z "${PROVIDED_USERNAME}" ]] && [[ -n "${IBLOCKLIST_USERNAME}" ]]; then
         PROVIDED_USERNAME="$IBLOCKLIST_USERNAME"
     fi  
-    if [[ -z "${PROVIDED_PASSWORD}" && -v "${IBLOCKLIST_PIN}" ]]; then
+    if [[ -z "${PROVIDED_PASSWORD}" ]] && [[ -n "${IBLOCKLIST_PIN}" ]]; then
         PROVIDED_PASSWORD="$IBLOCKLIST_PIN"
     fi
 
     # Decide if subscription authentication information exists
-    if [[ -n "${PROVIDED_USERNAME}" && -n "${PROVIDED_PASSWORD}" ]]; then
+    if [[ -n "${PROVIDED_USERNAME}" ]] && [[ -n "${PROVIDED_PASSWORD}" ]]; then
         report 'tech' 'Using provided I-Blocklist subscription information'
         report 'tech' "$PROVIDED_USERNAME"
         report 'tech' "$PROVIDED_PASSWORD"
