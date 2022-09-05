@@ -3,7 +3,7 @@
 
 # Constants
 BLOCKLIST_OUTPUT='I-Blocklist.blocklist'
-BLOCKLIST_STRUCT='Refresh-Blocklist-Buffer.XXXX'
+BLOCKLIST_STRUCT="${0##*/}.XXXX"
 
 # Command line argument derived variables
 PROVIDED_VERBIAGE=5  # Default to verbosity, set to '5' for DEBUG output
@@ -69,9 +69,10 @@ upload()
 
     sshpass -p "${BLOCKLIST_SFTP_PASS}" sftp \
         -oBatchMode=no \
+        -oCompression=yes \
         -oPort="${BLOCKLIST_SFTP_PORT}" \
         "${BLOCKLIST_SFTP_USER}@${BLOCKLIST_SFTP_HOST}" \
-        <<< $"put ${BLOCKLIST_BUFFER}/${BLOCKLIST_OUTPUT}"
+        <<< $"put -p ${BLOCKLIST_BUFFER}/${BLOCKLIST_OUTPUT}"
 }
 
 
