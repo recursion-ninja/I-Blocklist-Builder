@@ -2,7 +2,7 @@
 
 
 # Constants
-BLOCKLIST_OUTPUT='I-Blocklist.blocklist'
+BLOCKLIST_HANDLE='I-Blocklist.blocklist'
 BLOCKLIST_STRUCT="${0##*/}.XXXX"
 
 # Command line argument derived variables
@@ -72,7 +72,7 @@ upload()
         -oCompression=yes \
         -oPort="${BLOCKLIST_SFTP_PORT}" \
         "${BLOCKLIST_SFTP_USER}@${BLOCKLIST_SFTP_HOST}" \
-        <<< $"put -p ${BLOCKLIST_BUFFER}/${BLOCKLIST_OUTPUT}"
+        <<< $"put -p ${BLOCKLIST_OUTPUT}"
 }
 
 
@@ -81,7 +81,10 @@ setup()
     report 'tech' "Entering function call: 'setup'"
 
     BLOCKLIST_BUFFER=$(mktemp -d -t $BLOCKLIST_STRUCT)
+    BLOCKLIST_OUTPUT="${BLOCKLIST_BUFFER}/${BLOCKLIST_HANDLE}"
     touch "${BLOCKLIST_BUFFER}"
+    touch "${BLOCKLIST_OUTPUT}"
+    chmod 644 "${BLOCKLIST_OUTPUT}"
 
     report 'tech' "Buffer file created"
     report 'tech' "IBLOCKLIST_BUFFER: ${BLOCKLIST_BUFFER}"
